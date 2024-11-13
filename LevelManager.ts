@@ -2,6 +2,8 @@ import { Level } from './Level';
 
 export class LevelManager {
   private levelsData: Level[];
+  private levelsFilePath: string = './levels.json';
+  private saveFilePath: string = './save.json';
 
   constructor() {
     this.levelsData = [];
@@ -9,11 +11,10 @@ export class LevelManager {
 
   /**
    * Charge les niveaux à partir d'un fichier JSON
-   * @param filePath - Le chemin du fichier JSON contenant les niveaux
    */
-  public loadLevelsFromJSON(filePath: string): void {
+  public loadLevelsFromJSON(): void {
     // Utiliser une requête HTTP pour charger les données JSON (adapté pour TypeScript dans un environnement navigateur)
-    fetch(filePath)
+    fetch(this.levelsFilePath)
       .then(response => response.json())
       .then(parsedLevels => {
         // Implémenter la logique de conversion des données JSON en instances de Level
@@ -38,15 +39,35 @@ export class LevelManager {
    * @param level - Le niveau à sauvegarder
    */
   public saveProgress(level: Level): void {
-    // Implémenter la logique de sauvegarde de la progression
+    // Utiliser l'API fetch pour sauvegarder la progression dans un fichier JSON (adapté pour TypeScript dans un environnement navigateur)
+    fetch(this.saveFilePath, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(level)
+    })
+    .then(() => {
+      console.log('Progression sauvegardée avec succès');
+    })
+    .catch(error => {
+      console.error('Erreur lors de la sauvegarde de la progression :', error);
+    });
   }
 
   /**
    * Charge un niveau sauvegardé spécifique
-   * @returns Le niveau sauvegardé, ou null s'il n'y a aucune sauvegarde
+   * @returns Une promesse qui se résout avec le niveau sauvegardé, ou null s'il n'y a aucune sauvegarde
    */
-  public loadSavedLevel(): Level | null {
-    // Implémenter la logique pour charger un niveau sauvegardé
-    return null; // Placeholder
+  public loadSavedLevel(): Promise<Level | null> {
+    return fetch(this.saveFilePath)
+      .then(response => response.json())
+      .then((savedLevel: any) => {
+        return new Level(savedLevel.grid, savedLevel.holes, savedLevel.rocks, savedLevel.obstacles);
+      })
+      .catch(error => {
+        console.error('Erreur lors du chargement de la sauvegarde :', error);
+        return null;
+      });
   }
 }

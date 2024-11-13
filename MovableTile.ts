@@ -1,4 +1,5 @@
 import { Tile, TileType } from './Tile';
+import { Position } from './Position';
 
 export abstract class MovableTile extends Tile {
   constructor(x: number, y: number, type: TileType, color: string, shape: string) {
@@ -10,20 +11,36 @@ export abstract class MovableTile extends Tile {
    * @param direction - La direction du déplacement (haut, bas, gauche, droite)
    */
   public move(direction: Direction): void {
+    const nextPosition = this.getNextPosition(direction);
+    this.x = nextPosition.x;
+    this.y = nextPosition.y;
+  }
+
+  /**
+   * Obtient la prochaine position basée sur la direction donnée
+   * @param direction - La direction du déplacement
+   * @returns La nouvelle position après le déplacement
+   */
+  public getNextPosition(direction: Direction): Position {
+    let newX = this.x;
+    let newY = this.y;
+
     switch (direction) {
       case Direction.UP:
-        this.y -= 1;
+        newY -= 1;
         break;
       case Direction.DOWN:
-        this.y += 1;
+        newY += 1;
         break;
       case Direction.LEFT:
-        this.x -= 1;
+        newX -= 1;
         break;
       case Direction.RIGHT:
-        this.x += 1;
+        newX += 1;
         break;
     }
+
+    return new Position(newX, newY);
   }
 }
 

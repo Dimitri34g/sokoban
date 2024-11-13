@@ -1,4 +1,6 @@
 import { Position } from './Position';
+import { Player } from './Player';
+import { Rock } from './Rock';
 
 export class Move {
   public playerOldPosition: Position;
@@ -11,8 +13,13 @@ export class Move {
 
   /**
    * Inverse le mouvement effectué
+   * @param player - Le joueur dont la position doit être restaurée
+   * @param rock - Le rocher dont la position doit être restaurée, s'il y en a un
    */
-  public reverse(): void {
-    // Implémenter la logique pour inverser le mouvement
+  public reverse(player: Player, rock: Rock | null = null): void {
+    player.setInitialPosition(this.playerOldPosition.x, this.playerOldPosition.y);
+    if (rock && this.rockOldPosition) {
+      rock.setInitialPosition(this.rockOldPosition.x, this.rockOldPosition.y);
+    }
   }
 }

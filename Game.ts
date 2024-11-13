@@ -3,16 +3,19 @@ import { Level } from './Level';
 import { Player } from './Player';
 import { Rock } from './Rock';
 import { Obstacle } from './Obstacle';
+import { Hole } from './Hole';
 import { Direction } from './MovableTile';
 import { Position } from './Position';
 import { MoveHistory } from './MoveHistory';
 import { GameState } from './GameState';
+import { TileType } from './Tile';
 
 export class Game {
   private currentLevel: number;
   private levels: Level[];
   private player: Player;
   private rocks: Rock[];
+  private holes: Hole[];
   private obstacles: Obstacle[];
   private isGameRunning: boolean;
   private score: number;
@@ -23,8 +26,9 @@ export class Game {
     this.levels = levels;
     this.display = display;
     this.currentLevel = 0;
-    this.player = new Player(0, 0); // Position initiale par défaut
+    this.player = new Player(0, 0, this); // Position initiale par défaut
     this.rocks = [];
+    this.holes = [];
     this.obstacles = [];
     this.isGameRunning = true;
     this.score = 0;
@@ -56,9 +60,10 @@ export class Game {
    */
   public loadLevel(level: number): void {
     const currentLevelData = this.levels[level];
-    this.player = new Player(currentLevelData.grid[0][0].x, currentLevelData.grid[0][0].y);
-    this.rocks = currentLevelData.rocks;
-    this.obstacles = currentLevelData.obstacles;
+    this.player = new Player(currentLevelData.getGrid()[0][0].x, currentLevelData.getGrid()[0][0].y, this);
+    this.rocks = currentLevelData.getRocks().map(rockData => new Rock(rockData.x, rockData.y, this));
+    this.holes = currentLevelData.getHoles();
+    this.obstacles = currentLevelData.getObstacles();
     this.display.draw(this);
   }
 
@@ -67,7 +72,7 @@ export class Game {
    * @returns true si le jeu est terminé, sinon false
    */
   public isGameComplete(): boolean {
-    return this.levels[this.currentLevel].isLevelComplete();
+    return this.holes.every(hole => hole.isFilled);
   }
 
   /**
@@ -86,8 +91,23 @@ export class Game {
    * @param direction - La direction dans laquelle déplacer le joueur
    */
   public movePlayer(direction: Direction): void {
-    // Logique pour déplacer le joueur et pousser des rochers si nécessaire
-    this.display.draw(this);
+    const nextPosition = this.player.getNextPosition(direction);
+    if (this.isWithinBounds(nextPosition) && this.isPositionFree(nextPosition)) {
+      this.player.move(direction);
+      this.display.draw(this);  // Mise à jour de l'affichage après le déplacement
+    } else {
+      console.log("Déplacement invalide : hors des limites ou position occupée");
+    }
+  }
+
+  /**
+   * Vérifie si une position est dans les limites de la grille
+   * @param position - La position à vérifier
+   * @returns true si la position est dans les limites, sinon false
+   */
+  public isWithinBounds(position: Position): boolean {
+    return position.x >= 0 && position.x < this.levels[this.currentLevel].getGrid()[0].length &&
+           position.y >= 0 && position.y < this.levels[this.currentLevel].getGrid().length;
   }
 
   /**
@@ -106,7 +126,39 @@ export class Game {
    */
   public isPositionFree(position: Position): boolean {
     return !this.obstacles.some(obstacle => obstacle.hasSamePosition(position)) &&
-           !this.rocks.some(rock => rock.hasSamePosition(position));
+           !this.rocks.some(rock => rock.hasSamePosition(position)) &&
+           !this.holes.some(hole => hole.hasSamePosition(position) && !hole.isFilled);
+  }
+
+  /**
+   * Récupère le type de la tuile à une position donnée
+   * @param position - La position à vérifier
+   * @returns Le type de la tuile à la position donnée, ou null s'il n'y a aucune tuile
+   */
+  public getTileTypeAtPosition(position: Position): TileType | null {
+    if (this.player.hasSamePosition(position)) {
+      return this.player.type;
+    }
+
+    for (const rock of this.rocks) {
+      if (rock.hasSamePosition(position)) {
+        return rock.type;
+      }
+    }
+
+    for (const obstacle of this.obstacles) {
+      if (obstacle.hasSamePosition(position)) {
+        return obstacle.type;
+      }
+    }
+
+    for (const hole of this.holes) {
+      if (hole.hasSamePosition(position)) {
+        return hole.type;
+      }
+    }
+
+    return null; // Si aucune tuile ne se trouve à cette position
   }
 
   /**
@@ -129,7 +181,7 @@ export class Game {
    * Sauvegarde l'état actuel du jeu
    */
   public saveGame(): void {
-    const gameState = new GameState(this.currentLevel, this.player, this.rocks, this.levels[this.currentLevel].holes);
+    const gameState = new GameState(this.currentLevel, this.player, this.rocks, this.holes);
     localStorage.setItem('savedGameState', JSON.stringify(gameState));
   }
 
@@ -141,15 +193,46 @@ export class Game {
     if (savedGame) {
       const gameState: GameState = JSON.parse(savedGame);
       this.currentLevel = gameState.levelNumber;
-      this.player = new Player(gameState.playerPosition.x, gameState.playerPosition.y);
-      this.rocks = gameState.rockPositions.map(pos => new Rock(pos.x, pos.y));
-      this.levels[this.currentLevel].holes.forEach(hole => {
-        const savedHole = gameState.holeStates.find(h => h.position.hasSamePosition(hole));
-        if (savedHole) {
-          hole.isFilled = savedHole.isFilled;
-        }
+      this.player = new Player(gameState.playerPosition.x, gameState.playerPosition.y, this);
+      this.rocks = gameState.rockPositions.map(pos => new Rock(pos.x, pos.y, this));
+      this.holes = gameState.holeStates.map(holeState => {
+        const hole = new Hole(holeState.position.x, holeState.position.y);
+        hole.isFilled = holeState.isFilled;
+        return hole;
       });
       this.display.draw(this);
     }
+  }
+
+  /**
+   * Getter pour le joueur
+   * @returns L'instance du joueur
+   */
+  public getPlayer(): Player {
+    return this.player;
+  }
+
+  /**
+   * Getter pour les rochers
+   * @returns Un tableau de rochers
+   */
+  public getRocks(): Rock[] {
+    return this.rocks;
+  }
+
+  /**
+   * Getter pour les trous
+   * @returns Un tableau de trous
+   */
+  public getHoles(): Hole[] {
+    return this.holes;
+  }
+
+  /**
+   * Getter pour les obstacles
+   * @returns Un tableau d'obstacles
+   */
+  public getObstacles(): Obstacle[] {
+    return this.obstacles;
   }
 }

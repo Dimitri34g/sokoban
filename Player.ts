@@ -1,12 +1,15 @@
 import { MovableTile, Direction } from './MovableTile';
 import { TileType } from './Tile';
 import { Rock } from './Rock';
+import { Position } from './Position';
+import { Game } from './Game';
 
 export class Player extends MovableTile {
-  
+  private game: Game;
 
-  constructor(x: number, y: number) {
+  constructor(x: number, y: number, game: Game) {
     super(x, y, TileType.Player, 'blue', 'triangle');
+    this.game = game;
   }
 
   /**
@@ -15,7 +18,10 @@ export class Player extends MovableTile {
    * @param direction - La direction dans laquelle pousser le rocher
    */
   public pushRock(rock: Rock, direction: Direction): void {
-    // Implémenter la logique pour pousser le rocher
+    const nextPosition = rock.getNextPosition(direction);
+    if (this.game.isPositionFree(nextPosition)) {
+      rock.move(direction);
+    }
   }
 
   /**
@@ -24,7 +30,13 @@ export class Player extends MovableTile {
    * @param direction - La direction dans laquelle tirer le rocher
    */
   public pullRock(rock: Rock, direction: Direction): void {
-    // Implémenter la logique pour tirer le rocher
+    const playerNextPosition = this.getNextPosition(direction);
+    const rockNextPosition = rock.getNextPosition(direction);
+
+    if (playerNextPosition.hasSamePosition(rock.getPosition()) && this.game.isPositionFree(rockNextPosition)) {
+      this.move(direction);
+      rock.move(direction);
+    }
   }
 
   /**

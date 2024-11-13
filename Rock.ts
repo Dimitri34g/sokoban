@@ -1,13 +1,18 @@
-import { MovableTile ,Direction } from './MovableTile';
+import { MovableTile } from './MovableTile';
 import { TileType } from './Tile';
+import { Direction } from './MovableTile';
 import { Hole } from './Hole';
+import { Position } from './Position';
+import { Game } from './Game';
 
 export class Rock extends MovableTile {
   protected isInHole: boolean;
+  private game: Game; // Référence à l'instance de Game
 
-  constructor(x: number, y: number) {
+  constructor(x: number, y: number, game: Game) {
     super(x, y, TileType.Rock, 'grey', 'square');
     this.isInHole = false;
+    this.game = game;
   }
 
   /**
@@ -34,8 +39,15 @@ export class Rock extends MovableTile {
    * @returns true si tous les rochers peuvent être poussés, sinon false
    */
   public canPushAllRocks(direction: Direction): boolean {
-    // Implémenter la logique de vérification pour savoir si tous les rochers peuvent être poussés
-    return true; // Placeholder
+    let currentRock: Rock | null = this;
+    while (currentRock) {
+      const nextPosition = currentRock.getNextPosition(direction);
+      if (!this.game.isPositionFree(nextPosition)) {
+        return false;
+      }
+      currentRock = this.getRockAtPosition(nextPosition);
+    }
+    return true;
   }
 
   /**
@@ -43,7 +55,16 @@ export class Rock extends MovableTile {
    * @param direction - La direction du déplacement (haut, bas, gauche, droite)
    */
   public pushAllRocks(direction: Direction): void {
-    // Implémenter la logique pour pousser tous les rochers
+    let rocksToPush: Rock[] = [];
+    let currentRock: Rock | null = this;
+    while (currentRock) {
+      rocksToPush.push(currentRock);
+      const nextPosition = currentRock.getNextPosition(direction);
+      currentRock = this.getRockAtPosition(nextPosition);
+    }
+    for (let i = rocksToPush.length - 1; i >= 0; i--) {
+      rocksToPush[i].move(direction);
+    }
   }
 
   /**
@@ -57,5 +78,14 @@ export class Rock extends MovableTile {
         break;
       }
     }
+  }
+
+  /**
+   * Récupère le rocher à une position donnée
+   * @param position - La position à vérifier
+   * @returns Le rocher à la position donnée, ou null s'il n'y en a pas
+   */
+  private getRockAtPosition(position: Position): Rock | null {
+    return this.game.getRocks().find(rock => rock.hasSamePosition(position)) || null;
   }
 }
