@@ -17,7 +17,7 @@ export class Position {
   }
 
   /**
-   * Vérifie si deux positions sont adjacentes
+   * Vérifie si deux positions sont adjacentes (horizontalement ou verticalement) 
    * @param other - La position à comparer avec la position actuelle
    * @returns true si les deux positions sont adjacentes, sinon false
    */

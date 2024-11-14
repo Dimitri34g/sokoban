@@ -41,6 +41,27 @@ export class Game {
   public start(): void {
     this.loadLevel(this.currentLevel);
     this.display.draw(this);
+    this.gameLoop();
+  }
+
+  /**
+   * Boucle de jeu principale
+   */
+  private gameLoop(): void {
+    const gameInterval = setInterval(() => {
+      if (!this.isGameRunning) {
+        clearInterval(gameInterval);
+        return;
+      }
+
+      // Mise à jour de l'affichage et vérification des conditions de fin de jeu
+      this.display.draw(this);
+
+      if (this.isGameComplete()) {
+        this.endGame();
+        clearInterval(gameInterval);
+      }
+    }, 100); // Mise à jour toutes les 100 ms
   }
 
   /**
@@ -52,6 +73,7 @@ export class Game {
     this.score = 0;
     this.moveHistory = new MoveHistory(10);
     this.display.draw(this);
+    this.gameLoop();
   }
 
   /**
@@ -162,19 +184,22 @@ export class Game {
   }
 
   /**
-   * Termine le jeu
+   * Termine le jeu si tous les trous sont remplis
    */
   public endGame(): void {
     this.isGameRunning = false;
-    console.log('Le jeu est terminé !');
+    console.log(`Le jeu est terminé ! ${this.holes.filter(hole => hole.isFilled).length}/${this.holes.length} trous sont remplis.`);
+    alert(`Félicitations ! Vous avez complété le niveau. ${this.holes.filter(hole => hole.isFilled).length}/${this.holes.length} trous sont remplis.`);
   }
 
   /**
-   * Calcule le score actuel
+   * Calcule le score actuel basé sur le nombre de trous remplis
    * @returns Le score actuel
    */
   public calculateScore(): number {
-    return this.score; // Logique pour calculer le score si nécessaire
+    const filledHoles = this.holes.filter(hole => hole.isFilled).length;
+    this.score = Math.round((filledHoles / this.holes.length) * 100);
+    return this.score;
   }
 
   /**

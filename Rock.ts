@@ -17,10 +17,10 @@ export class Rock extends MovableTile {
 
   /**
    * Indique si le rocher est praticable (walkable)
-   * @returns false car un rocher n'est jamais praticable
+   * @returns true si le rocher est dans un trou, sinon false
    */
   public isWalkable(): boolean {
-    return false;
+    return this.isInHole;
   }
 
   /**
@@ -88,4 +88,5 @@ export class Rock extends MovableTile {
   private getRockAtPosition(position: Position): Rock | null {
     return this.game.getRocks().find(rock => rock.hasSamePosition(position)) || null;
   }
+
 }
