@@ -1,14 +1,15 @@
-import { Display } from './Display';
-import { Level } from './Level';
-import { Player } from './Player';
-import { Rock } from './Rock';
-import { Obstacle } from './Obstacle';
-import { Hole } from './Hole';
-import { Direction } from './MovableTile';
-import { Position } from './Position';
-import { MoveHistory } from './MoveHistory';
-import { GameState } from './GameState';
-import { TileType } from './Tile';
+import { Display } from './Display.js';
+import { Level } from './Level.js';
+import { Player } from './Player.js';
+import { Rock } from './Rock.js';
+import { Obstacle } from './Obstacle.js';
+import { Hole } from './Hole.js';
+import { Direction } from './MovableTile.js';
+import { Position } from './Position.js';
+import { MoveHistory } from './MoveHistory.js';
+import { GameState } from './GameState.js';
+import { TileType } from './Tile.js';
+import { Move } from './Move.js';
 
 export class Game {
   private currentLevel: number;
@@ -26,7 +27,7 @@ export class Game {
     this.levels = levels;
     this.display = display;
     this.currentLevel = 0;
-    this.player = new Player(0, 0, this); // Position initiale par défaut
+    this.player = new Player(0, 0); // Position initiale par défaut
     this.rocks = [];
     this.holes = [];
     this.obstacles = [];
@@ -46,22 +47,70 @@ export class Game {
 
   /**
    * Boucle de jeu principale
+   * @param direction - La direction dans laquelle déplacer le joueur
+   * @param isCtrlPressed - Indique si la touche Ctrl est appuyée
+   * @param isShiftPressed - Indique si la touche Shift est appuyée
    */
-  private gameLoop(): void {
-    const gameInterval = setInterval(() => {
-      if (!this.isGameRunning) {
-        clearInterval(gameInterval);
-        return;
-      }
+  public gameLoop(direction?: Direction, isCtrlPressed: boolean = false, isShiftPressed: boolean = false): void {
+    if (direction) {
+      const nextPosition = this.player.getNextPosition(direction);
 
-      // Mise à jour de l'affichage et vérification des conditions de fin de jeu
-      this.display.draw(this);
+      if (this.isWithinBounds(nextPosition)) {
+        const tileType = this.getTileTypeAtPosition(nextPosition);
 
-      if (this.isGameComplete()) {
-        this.endGame();
-        clearInterval(gameInterval);
+        if (this.isPositionFree(nextPosition)) {
+          this.moveHistory.addMove(new Move(this.player.getPosition()));
+          this.player.move(direction);
+        } else {
+          switch (tileType) {
+            case TileType.Hole:
+              const hole = this.holes.find(h => h.hasSamePosition(nextPosition));
+              if (hole && !hole.isFilled) {
+                // Ne rien faire si le trou est vide
+              } else {
+                this.moveHistory.addMove(new Move(this.player.getPosition()));
+                this.player.move(direction);
+              }
+              break;
+
+            case TileType.Obstacle:
+              // Ne rien faire pour les obstacles
+              break;
+
+            case TileType.Rock:
+              const rock = this.getRockAtPosition(nextPosition);
+              if (rock) {
+                if (rock.isWalkable()) {
+                  this.moveHistory.addMove(new Move(this.player.getPosition()));
+                  this.player.move(direction);
+                } else if (isShiftPressed) {
+                  this.moveHistory.addMove(new Move(this.player.getPosition(), rock.getPosition()));
+                  this.pullRock(rock, direction);
+                } else if (isCtrlPressed) {
+                  this.moveHistory.addMove(new Move(this.player.getPosition(), rock.getPosition()));
+                  this.pushRocksInCascade(rock, direction);
+                } else {
+                  this.moveHistory.addMove(new Move(this.player.getPosition(), rock.getPosition()));
+                  this.pushRock(rock, direction);
+                }
+              }
+              break;
+
+            default:
+              console.log("Déplacement invalide");
+          }
+        }
+
+        // Mise à jour de l'affichage après le mouvement
+        this.display.draw(this);
+        this.removeWalkableRocks(); // Supprime les rochers traversables
+        if (this.levels[this.currentLevel].isLevelComplete()) {
+          this.endGame();
+        }
+      } else {
+        console.log("Déplacement invalide : hors des limites");
       }
-    }, 100); // Mise à jour toutes les 100 ms
+    }
   }
 
   /**
@@ -73,7 +122,6 @@ export class Game {
     this.score = 0;
     this.moveHistory = new MoveHistory(10);
     this.display.draw(this);
-    this.gameLoop();
   }
 
   /**
@@ -82,19 +130,56 @@ export class Game {
    */
   public loadLevel(level: number): void {
     const currentLevelData = this.levels[level];
-    this.player = new Player(currentLevelData.getGrid()[0][0].x, currentLevelData.getGrid()[0][0].y, this);
-    this.rocks = currentLevelData.getRocks().map(rockData => new Rock(rockData.x, rockData.y, this));
+    this.player = new Player(currentLevelData.getGrid()[0][0].x, currentLevelData.getGrid()[0][0].y);
+    this.rocks = currentLevelData.getRocks().map(rockData => new Rock(rockData.x, rockData.y));
     this.holes = currentLevelData.getHoles();
     this.obstacles = currentLevelData.getObstacles();
     this.display.draw(this);
   }
 
   /**
-   * Vérifie si le jeu est terminé (tous les trous sont remplis)
-   * @returns true si le jeu est terminé, sinon false
+   * Pousse un rocher dans une direction donnée
+   * @param rock - Le rocher à pousser
+   * @param direction - La direction dans laquelle pousser le rocher
    */
-  public isGameComplete(): boolean {
-    return this.holes.every(hole => hole.isFilled);
+  private pushRock(rock: Rock, direction: Direction): void {
+    const nextPosition = rock.getNextPosition(direction);
+    if (this.isPositionFree(nextPosition)) {
+      rock.move(direction);
+    }
+  }
+
+  /**
+   * Pousse plusieurs rochers en cascade dans une direction donnée
+   * @param rock - Le rocher de départ
+   * @param direction - La direction du déplacement
+   */
+  private pushRocksInCascade(rock: Rock, direction: Direction): void {
+    let currentRock: Rock | null = rock;
+    while (currentRock && this.isPositionFree(currentRock.getNextPosition(direction))) {
+      currentRock.move(direction);
+      currentRock = this.getRockAtPosition(currentRock.getNextPosition(direction));
+    }
+  }
+
+  /**
+   * Tire un rocher dans une direction donnée
+   * @param rock - Le rocher à tirer
+   * @param direction - La direction dans laquelle tirer le rocher
+   */
+  private pullRock(rock: Rock, direction: Direction): void {
+    const playerNextPosition = this.player.getNextPosition(direction);
+    if (playerNextPosition.hasSamePosition(rock.getPosition()) && this.isPositionFree(rock.getNextPosition(direction))) {
+      this.player.move(direction);
+      rock.move(direction);
+    }
+  }
+
+  /**
+   * Supprime les rochers traversables
+   */
+  private removeWalkableRocks(): void {
+    this.rocks = this.rocks.filter(rock => !rock.isWalkable());
   }
 
   /**
@@ -103,22 +188,11 @@ export class Game {
   public undoLastMove(): void {
     if (this.moveHistory.canUndo()) {
       const lastMove = this.moveHistory.undoMove();
-      // Logique pour annuler le mouvement du joueur et/ou des rochers
+      if (lastMove) {
+        const rock = lastMove.rockOldPosition ? this.getRockAtPosition(lastMove.rockOldPosition) : null;
+        lastMove.reverse(this.player, rock);
+      }
       this.display.draw(this);
-    }
-  }
-
-  /**
-   * Déplace le joueur dans une direction donnée
-   * @param direction - La direction dans laquelle déplacer le joueur
-   */
-  public movePlayer(direction: Direction): void {
-    const nextPosition = this.player.getNextPosition(direction);
-    if (this.isWithinBounds(nextPosition) && this.isPositionFree(nextPosition)) {
-      this.player.move(direction);
-      this.display.draw(this);  // Mise à jour de l'affichage après le déplacement
-    } else {
-      console.log("Déplacement invalide : hors des limites ou position occupée");
     }
   }
 
@@ -192,6 +266,7 @@ export class Game {
     alert(`Félicitations ! Vous avez complété le niveau. ${this.holes.filter(hole => hole.isFilled).length}/${this.holes.length} trous sont remplis.`);
   }
 
+
   /**
    * Calcule le score actuel basé sur le nombre de trous remplis
    * @returns Le score actuel
@@ -218,8 +293,8 @@ export class Game {
     if (savedGame) {
       const gameState: GameState = JSON.parse(savedGame);
       this.currentLevel = gameState.levelNumber;
-      this.player = new Player(gameState.playerPosition.x, gameState.playerPosition.y, this);
-      this.rocks = gameState.rockPositions.map(pos => new Rock(pos.x, pos.y, this));
+      this.player = new Player(gameState.playerPosition.x, gameState.playerPosition.y);
+      this.rocks = gameState.rockPositions.map(pos => new Rock(pos.x, pos.y));
       this.holes = gameState.holeStates.map(holeState => {
         const hole = new Hole(holeState.position.x, holeState.position.y);
         hole.isFilled = holeState.isFilled;

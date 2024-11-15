@@ -1,7 +1,7 @@
-import { Position } from './Position';
-import { Player } from './Player';
-import { Rock } from './Rock';
-import { Hole } from './Hole';
+import { Position } from './Position.js';
+import { Player } from './Player.js';
+import { Rock } from './Rock.js';
+import { Hole } from './Hole.js';
 
 export class GameState {
   public levelNumber: number;

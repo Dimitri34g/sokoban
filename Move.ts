@@ -1,6 +1,6 @@
-import { Position } from './Position';
-import { Player } from './Player';
-import { Rock } from './Rock';
+import { Position } from './Position.js';
+import { Player } from './Player.js';
+import { Rock } from './Rock.js';
 
 export class Move {
   public playerOldPosition: Position;

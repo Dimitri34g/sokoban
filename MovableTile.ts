@@ -1,5 +1,5 @@
-import { Tile, TileType } from './Tile';
-import { Position } from './Position';
+import { Tile, TileType } from './Tile.js';
+import { Position } from './Position.js';
 
 export abstract class MovableTile extends Tile {
   constructor(x: number, y: number, type: TileType, color: string, shape: string) {

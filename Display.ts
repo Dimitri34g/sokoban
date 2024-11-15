@@ -1,9 +1,8 @@
-import Drawer from './Drawer';
-import { Game } from './Game';
-import { Player } from './Player';
-import { Rock } from './Rock';
-import { Hole } from './Hole';
-import { Obstacle } from './Obstacle';
+import Drawer from './Drawer.js';
+import { Game } from './Game.js';
+import { Rock } from './Rock.js';
+import { Hole } from './Hole.js';
+import { Obstacle } from './Obstacle.js';
 
 export class Display {
   private drawer: Drawer;

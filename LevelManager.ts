@@ -1,4 +1,4 @@
-import { Level } from './Level';
+import { Level } from './Level.js';
 
 export class LevelManager {
   private levelsData: Level[];
@@ -23,6 +23,14 @@ export class LevelManager {
       .catch(error => {
         console.error('Erreur lors du chargement des niveaux :', error);
       });
+  }
+
+  /**
+   * Récupère tous les niveaux chargés
+   * @returns Un tableau de niveaux
+   */
+  public getLevels(): Level[] {
+    return this.levelsData;
   }
 
   /**

@@ -1,7 +1,7 @@
-import { Tile } from './Tile';
-import { Hole } from './Hole';
-import { Rock } from './Rock';
-import { Obstacle } from './Obstacle';
+import { Tile } from './Tile.js';
+import { Hole } from './Hole.js';
+import { Rock } from './Rock.js';
+import { Obstacle } from './Obstacle.js';
 
 export class Level {
   private grid: Tile[][];

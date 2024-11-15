@@ -1,4 +1,4 @@
-import { Tile, TileType } from './Tile';
+import { Tile, TileType } from './Tile.js';
 
 export class Hole extends Tile {
   public isFilled: boolean;

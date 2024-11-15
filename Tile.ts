@@ -1,4 +1,4 @@
-import { Position } from './Position';
+import { Position } from './Position.js';
 
 export abstract class Tile extends Position {
   public type: TileType;
