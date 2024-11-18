@@ -1,30 +1,32 @@
 <!DOCTYPE html>
 <html lang="fr">
+  <head>
+    <title>SOKOBAN GAME</title>
+    <style>
+      .float {
+        float: left;
+      }
+      canvas {
+        border: 1px solid black;
+        background-color: white;
+      }
+    </style>
+  </head>
 
-<head>
-  <title>SOKOBAN GAME</title>
-  <style>
-    .float {
-      float: left;
-    }
-    canvas {
-      border: 1px solid black;
-      background-color: white;
-    }
-    
-    
-  </style>
-</head>
+  <body style="background-color: #faf0e6">
+    <div>Level : <span id="score"></span></div>
+    <div id="display" class="float"></div>
+  </body>
 
-<body style= "background-color:#faf0e6">
-
-
-  <div>Level : <span id="score"></span></div>
-  <div id="display" class="float"></div>
-</body>
-
-
-<script type="module" src="./dist/Sokoban.js"></script>
-
-
+  <script type="module" src="./dist/Position.js"></script>
+  <script type="module" src="./dist/Tile.js"></script>
+  <script type="module" src="./dist/MovableTile.js"></script>
+  <script type="module" src="./dist/Player.js"></script>
+  <script type="module" src="./dist/Rock.js"></script>
+  <script type="module" src="./dist/Hole.js"></script>
+  <script type="module" src="./dist/Level.js"></script>
+  <script type="module" src="./dist/Display.js"></script>
+  <script type="module" src="./dist/Drawer.js"></script>
+  <script type="module" src="./dist/Game.js"></script>
+  <script type="module" src="./dist/Sokoban.js"></script>
 </html>
