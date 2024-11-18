@@ -21,20 +21,18 @@ export class Sokoban {
     document.addEventListener('keydown', (event) => {
       switch (event.key) {
         case 'ArrowUp':
-          this.game.currentLevel.player.movePlayer(Direction.UP);
+          this.game.gameLoop(Direction.UP);
           break;
         case 'ArrowDown':
-          this.game.currentLevel.player.movePlayer(Direction.DOWN);
+          this.game.gameLoop(Direction.DOWN);
           break;
         case 'ArrowLeft':
-          this.game.currentLevel.player.movePlayer(Direction.LEFT);
+          this.game.gameLoop(Direction.LEFT);
           break;
         case 'ArrowRight':
-          this.game.currentLevel.player.movePlayer(Direction.RIGHT);
+          this.game.gameLoop(Direction.RIGHT);
           break;
       }
-      this.game.checkCollision();
-      this.game.display.update();
     });
   }
 }

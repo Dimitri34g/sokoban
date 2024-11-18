@@ -3,6 +3,7 @@ import { Level } from './Level.js';
 import { Player } from './Player.js';
 import { Rock } from './Rock.js';
 import { Hole } from './Hole.js';
+import { TileType } from './Tile.js';
 export class Game {
     /**
      * Constructeur pour initialiser le jeu avec une largeur, une hauteur et une échelle.
@@ -18,14 +19,14 @@ export class Game {
         this.currentLevel = this.createInitialLevel();
     }
     /**
-     * Crée le niveau initial du jeu.
+     * Crée le niveau initial du jeu avec des positions aléatoires.
      * @returns Une instance de `Level` représentant le niveau initial.
      */
     createInitialLevel() {
-        const rocks = [new Rock(2, 3), new Rock(4, 5)];
-        const holes = [new Hole(6, 7), new Hole(8, 9)];
+        const rocks = Array.from({ length: 2 }, () => new Rock(0, 0, this));
+        const holes = Array.from({ length: 2 }, () => new Hole(0, 0));
         const player = new Player(0, 0);
-        return new Level(rocks, holes, player);
+        return new Level(rocks, holes, player, this.width, this.height);
     }
     /**
      * Démarre le jeu et initialise le niveau actuel.
@@ -41,7 +42,7 @@ export class Game {
     nextLevel() {
         if (this.currentLevel.isCompleted()) {
             this.score++;
-            this.currentLevel = this.createInitialLevel(); // Pour l'instant, créer un nouveau niveau similaire
+            this.currentLevel = this.createInitialLevel();
             this.currentLevel.initializeLevel();
             this.display.update();
             console.log("Niveau suivant commencé ! Score actuel :", this.score);
@@ -66,5 +67,78 @@ export class Game {
                 this.display.update();
             }
         });
+    }
+    /**
+     * Vérifie si la tuile peut se déplacer à une position donnée.
+     * @param position - La position cible.
+     * @returns `true` si la position est à l'intérieur des limites de la grille, sinon `false`.
+     */
+    canMoveTo(position) {
+        const { x, y } = position;
+        // Vérifier si la position est dans les limites de la grille
+        return x >= 0 && x < this.width && y >= 0 && y < this.height;
+    }
+    /**
+     * Retourne le type de tuile à une position donnée.
+     * @param position - La position cible.
+     * @returns Le type de la tuile à la position donnée ou null si aucune tuile n'est présente.
+     */
+    getTileTypeAtPosition(position) {
+        if (this.currentLevel.holes.some(hole => hole.hasSamePosition(position))) {
+            return TileType.Hole;
+        }
+        if (this.currentLevel.rocks.some(rock => rock.hasSamePosition(position))) {
+            return TileType.Rock;
+        }
+        if (this.currentLevel.player.hasSamePosition(position)) {
+            return TileType.Player;
+        }
+        return null;
+    }
+    /**
+     * Gère la boucle de jeu pour le déplacement du joueur.
+     * @param direction - La direction dans laquelle le joueur souhaite se déplacer.
+     */
+    gameLoop(direction) {
+        const player = this.currentLevel.player;
+        const nextPosition = player.getNextPosition(direction);
+        // Vérifier si le mouvement est à l'intérieur des limites de la grille
+        if (!this.canMoveTo(nextPosition)) {
+            return; // Mouvement non valide, on ne fait rien
+        }
+        // Vérifier le type de tuile à la prochaine position
+        const tileType = this.getTileTypeAtPosition(nextPosition);
+        if (tileType === TileType.Hole) {
+            const hole = this.currentLevel.holes.find(hole => hole.hasSamePosition(nextPosition));
+            if (hole && !hole.isFilled()) {
+                return; // Le trou n'est pas rempli, le joueur ne peut pas s'y déplacer
+            }
+        }
+        else if (tileType === TileType.Rock) {
+            const rock = this.currentLevel.rocks.find(rock => rock.hasSamePosition(nextPosition));
+            if (rock) {
+                // Tenter de pousser le rocher
+                if (rock.push(direction)) {
+                    player.move(direction); // Déplacer le joueur si le rocher a été poussé
+                }
+                else {
+                    return; // Si le rocher ne peut pas être poussé, on ne bouge pas
+                }
+            }
+        }
+        else if (tileType === null) {
+            // La position est libre, on peut bouger
+            player.move(direction);
+        }
+        // Vérifier si un rocher et un trou ont la même position
+        this.currentLevel.rocks.forEach((rock, index) => {
+            const correspondingHole = this.currentLevel.holes.find(hole => hole.hasSamePosition(rock));
+            if (correspondingHole) {
+                correspondingHole.fill(); // Remplir le trou
+                this.currentLevel.rocks.splice(index, 1); // Retirer le rocher de la liste
+            }
+        });
+        // Mise à jour de l'affichage après chaque action
+        this.display.update();
     }
 }

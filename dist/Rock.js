@@ -5,9 +5,11 @@ export class Rock extends MovableTile {
      * Constructeur pour initialiser le rocher avec des valeurs par défaut.
      * @param x - La coordonnée x du rocher.
      * @param y - La coordonnée y du rocher.
+     * @param game - Instance du jeu pour vérifier les règles de déplacement.
      */
-    constructor(x, y) {
+    constructor(x, y, game) {
         super(x, y, 'gray', TileType.Rock);
+        this.game = game;
     }
     /**
      * Pousse le rocher dans une direction donnée.
@@ -16,7 +18,7 @@ export class Rock extends MovableTile {
      */
     push(direction) {
         const nextPosition = this.getNextPosition(direction);
-        if (this.canMoveTo(nextPosition)) {
+        if (this.game.canMoveTo(nextPosition)) {
             this.move(direction);
             return true;
         }

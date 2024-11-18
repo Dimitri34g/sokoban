@@ -19,16 +19,6 @@ export enum Direction {
     }
   
     /**
-     * Vérifie si la tuile peut se déplacer à une position donnée.
-     * @param position - La position cible.
-     * @returns `true` si la tuile peut se déplacer vers la position, sinon `false`.
-     */
-    public canMoveTo(position: Position): boolean {
-      // Implémentation personnalisée à préciser en fonction des règles de mouvement.
-      return true; // Placeholder pour la logique de validation.
-    }
-  
-    /**
      * Retourne la prochaine position en fonction de la direction donnée.
      * @param direction - La direction dans laquelle la tuile doit se déplacer.
      * @returns La prochaine position de la tuile.

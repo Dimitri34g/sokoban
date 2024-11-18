@@ -1,32 +1,39 @@
+import { Position } from './Position.js';
 export class Level {
-    /**
-     * Constructeur pour initialiser un niveau avec des rochers, des trous et un joueur.
-     * @param rocks - Liste des rochers du niveau.
-     * @param holes - Liste des trous du niveau.
-     * @param player - Le joueur du niveau.
-     */
-    constructor(rocks, holes, player) {
+    constructor(rocks, holes, player, width, height) {
         this.rocks = rocks;
         this.holes = holes;
         this.player = player;
+        this.width = width;
+        this.height = height;
     }
     /**
-     * Initialise le niveau en plaçant les rochers, les trous et le joueur aux positions de départ.
+     * Initialise le niveau en plaçant les rochers, les trous et le joueur à des positions aléatoires.
      */
     initializeLevel() {
-        // Placer le joueur à sa position initiale
-        this.player.setPosition(0, 0);
-        // Placer chaque rocher à une position définie
-        this.rocks.forEach((rock, index) => {
-            const x = index + 1; // Exemple de logique de placement
-            const y = index + 2;
-            rock.setPosition(x, y);
+        const occupiedPositions = new Set();
+        // Génère une position aléatoire valide pour chaque entité
+        const generateRandomPosition = (minX, maxX, minY, maxY) => {
+            let x, y;
+            do {
+                x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+                y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+            } while (occupiedPositions.has(`${x},${y}`));
+            occupiedPositions.add(`${x},${y}`);
+            return new Position(x, y);
+        };
+        // Placer le joueur aléatoirement dans la grille (sans restriction particulière)
+        const playerPosition = generateRandomPosition(0, this.width - 1, 0, this.height - 1);
+        this.player.setPosition(playerPosition.x, playerPosition.y);
+        // Placer chaque rocher à une position aléatoire dans la grille, à au moins une case du bord
+        this.rocks.forEach((rock) => {
+            const rockPosition = generateRandomPosition(1, this.width - 2, 1, this.height - 2);
+            rock.setPosition(rockPosition.x, rockPosition.y);
         });
-        // Placer chaque trou à une position définie
-        this.holes.forEach((hole, index) => {
-            const x = index + 3; // Exemple de logique de placement
-            const y = index + 4;
-            hole.setPosition(x, y);
+        // Placer chaque trou à une position aléatoire dans la grille (aucune restriction particulière)
+        this.holes.forEach((hole) => {
+            const holePosition = generateRandomPosition(0, this.width - 1, 0, this.height - 1);
+            hole.setPosition(holePosition.x, holePosition.y);
         });
         console.log('Niveau initialisé avec le joueur, les rochers et les trous.');
     }

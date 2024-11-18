@@ -17,15 +17,6 @@ export class MovableTile extends Tile {
         this.setPosition(nextPosition.x, nextPosition.y);
     }
     /**
-     * Vérifie si la tuile peut se déplacer à une position donnée.
-     * @param position - La position cible.
-     * @returns `true` si la tuile peut se déplacer vers la position, sinon `false`.
-     */
-    canMoveTo(position) {
-        // Implémentation personnalisée à préciser en fonction des règles de mouvement.
-        return true; // Placeholder pour la logique de validation.
-    }
-    /**
      * Retourne la prochaine position en fonction de la direction donnée.
      * @param direction - La direction dans laquelle la tuile doit se déplacer.
      * @returns La prochaine position de la tuile.
