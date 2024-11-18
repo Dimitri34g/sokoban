@@ -1,263 +1,177 @@
-import { Display } from './Display';
-import { Level } from './Level';
-import { Player } from './Player';
-import { Rock } from './Rock';
-import { Obstacle } from './Obstacle';
-import { Hole } from './Hole';
-import { Direction } from './MovableTile';
-import { Position } from './Position';
-import { MoveHistory } from './MoveHistory';
-import { GameState } from './GameState';
-import { TileType } from './Tile';
+import { Display } from './Display.js';
+import { Level } from './Level.js';
+import { Player } from './Player.js';
+import { Rock } from './Rock.js';
+import { Hole } from './Hole.js';
+import { Position } from './Position.js';
+import { Direction } from './MovableTile.js';
+import { TileType } from './Tile.js';
 
 export class Game {
-  private currentLevel: number;
-  private levels: Level[];
-  private player: Player;
-  private rocks: Rock[];
-  private holes: Hole[];
-  private obstacles: Obstacle[];
-  private isGameRunning: boolean;
+  public width: number;
+  public height: number;
+  public display: Display;
+  public currentLevel: Level;
   private score: number;
-  private display: Display;
-  private moveHistory: MoveHistory;
+  private levelCount: number;
 
-  constructor(levels: Level[], display: Display) {
-    this.levels = levels;
-    this.display = display;
-    this.currentLevel = 0;
-    this.player = new Player(0, 0, this); // Position initiale par défaut
-    this.rocks = [];
-    this.holes = [];
-    this.obstacles = [];
-    this.isGameRunning = true;
+  /**
+   * Constructeur pour initialiser le jeu avec une largeur, une hauteur et une échelle.
+   * @param width - La largeur du jeu.
+   * @param height - La hauteur du jeu.
+   * @param scale - L'échelle du jeu.
+   */
+  constructor(width: number, height: number, scale: number) {
+    this.width = width;
+    this.height = height;
+    this.display = new Display(width, height, scale, this);
     this.score = 0;
-    this.moveHistory = new MoveHistory(10); // Par exemple, maxUndo = 10
+    this.levelCount = 1;
+    this.currentLevel = this.createInitialLevel(2, 2);
   }
 
   /**
-   * Démarre le jeu
+   * Crée un niveau du jeu avec des positions aléatoires et un nombre donné de rochers et de trous.
+   * @param rockCount - Le nombre de rochers dans le niveau.
+   * @param holeCount - Le nombre de trous dans le niveau.
+   * @returns Une instance de `Level` représentant le niveau.
+   */
+  private createInitialLevel(rockCount: number, holeCount: number): Level {
+    const rocks = Array.from({ length: rockCount }, () => new Rock(0, 0, this));
+    const holes = Array.from({ length: holeCount }, () => new Hole(0, 0));
+    const player = new Player(0, 0);
+    return new Level(rocks, holes, player, this.width, this.height);
+  }
+
+  /**
+   * Démarre le jeu et initialise le niveau actuel.
    */
   public start(): void {
-    this.loadLevel(this.currentLevel);
+    this.currentLevel.initializeLevel();
     this.display.draw(this);
-    this.gameLoop();
+    console.log("Le jeu a démarré !");
   }
 
   /**
-   * Boucle de jeu principale
+   * Passe au niveau suivant et augmente le score.
    */
-  private gameLoop(): void {
-    const gameInterval = setInterval(() => {
-      if (!this.isGameRunning) {
-        clearInterval(gameInterval);
-        return;
-      }
-
-      // Mise à jour de l'affichage et vérification des conditions de fin de jeu
-      this.display.draw(this);
-
-      if (this.isGameComplete()) {
-        this.endGame();
-        clearInterval(gameInterval);
-      }
-    }, 100); // Mise à jour toutes les 100 ms
-  }
-
-  /**
-   * Redémarre le jeu
-   */
-  public restart(): void {
-    this.loadLevel(this.currentLevel);
-    this.isGameRunning = true;
-    this.score = 0;
-    this.moveHistory = new MoveHistory(10);
-    this.display.draw(this);
-    this.gameLoop();
-  }
-
-  /**
-   * Charge un niveau spécifique
-   * @param level - Le numéro du niveau à charger
-   */
-  public loadLevel(level: number): void {
-    const currentLevelData = this.levels[level];
-    this.player = new Player(currentLevelData.getGrid()[0][0].x, currentLevelData.getGrid()[0][0].y, this);
-    this.rocks = currentLevelData.getRocks().map(rockData => new Rock(rockData.x, rockData.y, this));
-    this.holes = currentLevelData.getHoles();
-    this.obstacles = currentLevelData.getObstacles();
-    this.display.draw(this);
-  }
-
-  /**
-   * Vérifie si le jeu est terminé (tous les trous sont remplis)
-   * @returns true si le jeu est terminé, sinon false
-   */
-  public isGameComplete(): boolean {
-    return this.holes.every(hole => hole.isFilled);
-  }
-
-  /**
-   * Annule le dernier mouvement
-   */
-  public undoLastMove(): void {
-    if (this.moveHistory.canUndo()) {
-      const lastMove = this.moveHistory.undoMove();
-      // Logique pour annuler le mouvement du joueur et/ou des rochers
-      this.display.draw(this);
+  public nextLevel(): void {
+    if (this.currentLevel.isCompleted()) {
+      this.score++;
+      this.levelCount++;
+      const newRockCount = 2 + this.levelCount - 1;
+      const newHoleCount = 2 + this.levelCount - 1;
+      this.currentLevel = this.createInitialLevel(newRockCount, newHoleCount);
+      this.currentLevel.initializeLevel();
+      this.display.update();
+      console.log("Niveau suivant commencé ! Score actuel :", this.score);
     }
   }
 
   /**
-   * Déplace le joueur dans une direction donnée
-   * @param direction - La direction dans laquelle déplacer le joueur
+   * Vérifie si la tuile peut se déplacer à une position donnée.
+   * @param position - La position cible.
+   * @returns `true` si la position est à l'intérieur des limites de la grille, sinon `false`.
    */
-  public movePlayer(direction: Direction): void {
-    const nextPosition = this.player.getNextPosition(direction);
-    if (this.isWithinBounds(nextPosition) && this.isPositionFree(nextPosition)) {
-      this.player.move(direction);
-      this.display.draw(this);  // Mise à jour de l'affichage après le déplacement
-    } else {
-      console.log("Déplacement invalide : hors des limites ou position occupée");
-    }
+  public canMoveTo(position: Position): boolean {
+    const { x, y } = position;
+
+    // Vérifier si la position est dans les limites de la grille
+    return x >= 0 && x < this.width && y >= 0 && y < this.height;
   }
 
   /**
-   * Vérifie si une position est dans les limites de la grille
-   * @param position - La position à vérifier
-   * @returns true si la position est dans les limites, sinon false
-   */
-  public isWithinBounds(position: Position): boolean {
-    return position.x >= 0 && position.x < this.levels[this.currentLevel].getGrid()[0].length &&
-           position.y >= 0 && position.y < this.levels[this.currentLevel].getGrid().length;
-  }
-
-  /**
-   * Récupère un rocher à une position donnée
-   * @param position - La position à vérifier
-   * @returns Le rocher à la position donnée, ou null s'il n'y en a pas
-   */
-  public getRockAtPosition(position: Position): Rock | null {
-    return this.rocks.find(rock => rock.hasSamePosition(position)) || null;
-  }
-
-  /**
-   * Vérifie si une position est libre (sans obstacle ni rocher)
-   * @param position - La position à vérifier
-   * @returns true si la position est libre, sinon false
-   */
-  public isPositionFree(position: Position): boolean {
-    return !this.obstacles.some(obstacle => obstacle.hasSamePosition(position)) &&
-           !this.rocks.some(rock => rock.hasSamePosition(position)) &&
-           !this.holes.some(hole => hole.hasSamePosition(position) && !hole.isFilled);
-  }
-
-  /**
-   * Récupère le type de la tuile à une position donnée
-   * @param position - La position à vérifier
-   * @returns Le type de la tuile à la position donnée, ou null s'il n'y a aucune tuile
+   * Retourne le type de tuile à une position donnée.
+   * @param position - La position cible.
+   * @returns Le type de la tuile à la position donnée ou null si aucune tuile n'est présente.
    */
   public getTileTypeAtPosition(position: Position): TileType | null {
-    if (this.player.hasSamePosition(position)) {
-      return this.player.type;
+    if (this.currentLevel.holes.some(hole => hole.hasSamePosition(position))) {
+      return TileType.Hole;
     }
+    if (this.currentLevel.rocks.some(rock => rock.hasSamePosition(position))) {
+      return TileType.Rock;
+    }
+    if (this.currentLevel.player.hasSamePosition(position)) {
+      return TileType.Player;
+    }
+    return null;
+  }
 
-    for (const rock of this.rocks) {
-      if (rock.hasSamePosition(position)) {
-        return rock.type;
+  public gameLoop(direction: Direction): void {
+    const player = this.currentLevel.player;
+    const nextPosition = player.getNextPosition(direction);
+  
+    // Vérifier si le mouvement est à l'intérieur des limites de la grille
+    if (!this.canMoveTo(nextPosition)) {
+      return; // Mouvement non valide, on ne fait rien
+    }
+  
+    // Vérifier le type de tuile à la prochaine position
+    let tileType = this.getTileTypeAtPosition(nextPosition);
+  
+    if (tileType === TileType.Hole) {
+      const hole = this.currentLevel.holes.find(hole => hole.hasSamePosition(nextPosition));
+      if (hole && hole.isFilled()) {
+        player.move(direction); // Le trou est rempli, le joueur peut se déplacer
+      } else {
+        return; // Le trou n'est pas rempli, le joueur ne peut pas s'y déplacer
       }
-    }
-
-    for (const obstacle of this.obstacles) {
-      if (obstacle.hasSamePosition(position)) {
-        return obstacle.type;
+    } else if (tileType === TileType.Rock) {
+      let currentRock: Rock | null = this.currentLevel.rocks.find(rock => rock.hasSamePosition(nextPosition)) ?? null;
+      let rocksToPush: Rock[] = [];
+  
+      // Boucle pour collecter tous les rochers alignés
+      while (currentRock) {
+        rocksToPush.push(currentRock);
+        const nextRockPosition = currentRock.getNextPosition(direction);
+  
+        // Vérifier si la prochaine position est dans les limites et si un autre rocher est présent
+        if (!this.canMoveTo(nextRockPosition)) {
+          return; // Mouvement non valide, on ne fait rien
+        }
+  
+        tileType = this.getTileTypeAtPosition(nextRockPosition);
+        if (tileType === TileType.Rock) {
+          currentRock = this.currentLevel.rocks.find(rock => rock.hasSamePosition(nextRockPosition)) ?? null;
+        } else if (tileType === TileType.Hole) {
+          currentRock = null; // Le trou est libre pour le rocher
+        } else if (tileType === null) {
+          currentRock = null; // Fin de la chaîne de rochers, la prochaine position est libre
+        } else {
+          return; // Un obstacle est rencontré (autre que rocher ou case vide), on ne peut pas pousser
+        }
       }
-    }
-
-    for (const hole of this.holes) {
-      if (hole.hasSamePosition(position)) {
-        return hole.type;
+  
+      // Si toutes les positions suivantes sont libres ou des trous, déplacer les rochers
+      if (tileType === null || tileType === TileType.Hole) {
+        // Déplacer tous les rochers dans l'ordre inverse pour éviter les conflits de position
+        for (let i = rocksToPush.length - 1; i >= 0; i--) {
+          rocksToPush[i].move(direction);
+  
+          // Vérifier si le rocher est sur un trou après avoir été déplacé
+          const correspondingHole = this.currentLevel.holes.find(hole => hole.hasSamePosition(rocksToPush[i]));
+          if (correspondingHole && !correspondingHole.isFilled()) {
+            correspondingHole.fill(); // Remplir le trou
+            this.currentLevel.rocks.splice(this.currentLevel.rocks.indexOf(rocksToPush[i]), 1); // Retirer le rocher de la liste
+          }
+        }
+        player.move(direction); // Déplacer le joueur après avoir déplacé les rochers
       }
+    } else if (tileType === null) {
+      // La position est libre, on peut bouger
+      player.move(direction);
     }
-
-    return null; // Si aucune tuile ne se trouve à cette position
-  }
-
-  /**
-   * Termine le jeu si tous les trous sont remplis
-   */
-  public endGame(): void {
-    this.isGameRunning = false;
-    console.log(`Le jeu est terminé ! ${this.holes.filter(hole => hole.isFilled).length}/${this.holes.length} trous sont remplis.`);
-    alert(`Félicitations ! Vous avez complété le niveau. ${this.holes.filter(hole => hole.isFilled).length}/${this.holes.length} trous sont remplis.`);
-  }
-
-  /**
-   * Calcule le score actuel basé sur le nombre de trous remplis
-   * @returns Le score actuel
-   */
-  public calculateScore(): number {
-    const filledHoles = this.holes.filter(hole => hole.isFilled).length;
-    this.score = Math.round((filledHoles / this.holes.length) * 100);
-    return this.score;
-  }
-
-  /**
-   * Sauvegarde l'état actuel du jeu
-   */
-  public saveGame(): void {
-    const gameState = new GameState(this.currentLevel, this.player, this.rocks, this.holes);
-    localStorage.setItem('savedGameState', JSON.stringify(gameState));
-  }
-
-  /**
-   * Charge un état de jeu sauvegardé
-   */
-  public loadGame(): void {
-    const savedGame = localStorage.getItem('savedGameState');
-    if (savedGame) {
-      const gameState: GameState = JSON.parse(savedGame);
-      this.currentLevel = gameState.levelNumber;
-      this.player = new Player(gameState.playerPosition.x, gameState.playerPosition.y, this);
-      this.rocks = gameState.rockPositions.map(pos => new Rock(pos.x, pos.y, this));
-      this.holes = gameState.holeStates.map(holeState => {
-        const hole = new Hole(holeState.position.x, holeState.position.y);
-        hole.isFilled = holeState.isFilled;
-        return hole;
-      });
-      this.display.draw(this);
+  
+    // Mise à jour de l'affichage après chaque action
+    this.display.update();
+  
+    // Vérifier si le niveau est terminé et passer au niveau suivant si nécessaire
+    if (this.currentLevel.isCompleted()) {
+      this.nextLevel();
     }
   }
-
-  /**
-   * Getter pour le joueur
-   * @returns L'instance du joueur
-   */
-  public getPlayer(): Player {
-    return this.player;
-  }
-
-  /**
-   * Getter pour les rochers
-   * @returns Un tableau de rochers
-   */
-  public getRocks(): Rock[] {
-    return this.rocks;
-  }
-
-  /**
-   * Getter pour les trous
-   * @returns Un tableau de trous
-   */
-  public getHoles(): Hole[] {
-    return this.holes;
-  }
-
-  /**
-   * Getter pour les obstacles
-   * @returns Un tableau d'obstacles
-   */
-  public getObstacles(): Obstacle[] {
-    return this.obstacles;
-  }
+  
+  
+  
 }

@@ -1,3 +1,5 @@
+import { Tile , TileType } from './Tile.js';
+
 export default class Drawer {
   private ctx: CanvasRenderingContext2D;
   private scale: number;
@@ -12,17 +14,38 @@ export default class Drawer {
   }
 
   /**
-   * Efface le contenu du canvas
+   * Efface le contenu du canvas.
    */
   public clear(): void {
     this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
   }
 
   /**
-   * Dessine un rectangle sur le canvas
-   * @param x - La position x du rectangle
-   * @param y - La position y du rectangle
-   * @param color - La couleur du rectangle
+   * Dessine une tuile sur le canvas.
+   * @param tile - La tuile à dessiner.
+   */
+  public drawTile(tile: Tile): void {
+    const { x, y } = tile.getPosition();
+    const color = tile.getColor();
+
+    if (tile instanceof Tile) {
+      switch (tile.type) {
+        case TileType.Rock:
+        case TileType.Hole:
+          this.drawRectangle(x, y, color);
+          break;
+        case TileType.Player:
+          this.drawCircle(x, y, color);
+          break;
+      }
+    }
+  }
+
+  /**
+   * Dessine un rectangle sur le canvas.
+   * @param x - Coordonnée x du rectangle.
+   * @param y - Coordonnée y du rectangle.
+   * @param color - Couleur du rectangle.
    */
   public drawRectangle(x: number, y: number, color: string): void {
     this.ctx.beginPath();
@@ -31,10 +54,10 @@ export default class Drawer {
   }
 
   /**
-   * Dessine un cercle sur le canvas
-   * @param x - La position x du cercle
-   * @param y - La position y du cercle
-   * @param color - La couleur du cercle
+   * Dessine un cercle sur le canvas.
+   * @param x - Coordonnée x du cercle.
+   * @param y - Coordonnée y du cercle.
+   * @param color - Couleur du cercle.
    */
   public drawCircle(x: number, y: number, color: string): void {
     this.ctx.beginPath();

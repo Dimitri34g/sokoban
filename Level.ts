@@ -1,68 +1,63 @@
-import { Tile } from './Tile';
-import { Hole } from './Hole';
-import { Rock } from './Rock';
-import { Obstacle } from './Obstacle';
+import { Rock } from './Rock.js';
+import { Hole } from './Hole.js';
+import { Player } from './Player.js';
+import { Position } from './Position.js';
 
 export class Level {
-  private grid: Tile[][];
-  private holes: Hole[];
-  private rocks: Rock[];
-  private obstacles: Obstacle[];
+  public rocks: Rock[];
+  public holes: Hole[];
+  public player: Player;
+  public width: number;
+  public height: number;
 
-  constructor(grid: Tile[][], holes: Hole[], rocks: Rock[], obstacles: Obstacle[]) {
-    this.grid = grid;
-    this.holes = holes;
+  constructor(rocks: Rock[], holes: Hole[], player: Player, width: number, height: number) {
     this.rocks = rocks;
-    this.obstacles = obstacles;
+    this.holes = holes;
+    this.player = player;
+    this.width = width;
+    this.height = height;
   }
 
   /**
-   * Getter pour la grille du niveau
-   * @returns La grille du niveau
-   */
-  public getGrid(): Tile[][] {
-    return this.grid;
-  }
-
-  /**
-   * Getter pour les trous du niveau
-   * @returns La liste des trous
-   */
-  public getHoles(): Hole[] {
-    return this.holes;
-  }
-
-  /**
-   * Getter pour les rochers du niveau
-   * @returns La liste des rochers
-   */
-  public getRocks(): Rock[] {
-    return this.rocks;
-  }
-
-  /**
-   * Getter pour les obstacles du niveau
-   * @returns La liste des obstacles
-   */
-  public getObstacles(): Obstacle[] {
-    return this.obstacles;
-  }
-
-  /**
-   * Initialise le niveau avec les éléments fournis
+   * Initialise le niveau en plaçant les rochers, les trous et le joueur à des positions aléatoires.
    */
   public initializeLevel(): void {
-    // Logique d'initialisation, par exemple définir les positions initiales des tuiles
-    this.holes.forEach(hole => hole.setInitialPosition(hole.x, hole.y));
-    this.rocks.forEach(rock => rock.setInitialPosition(rock.x, rock.y));
-    this.obstacles.forEach(obstacle => obstacle.setInitialPosition(obstacle.x, obstacle.y));
-  }
+    const occupiedPositions = new Set<string>();
 
+    // Génère une position aléatoire valide pour chaque entité
+    const generateRandomPosition = (minX: number, maxX: number, minY: number, maxY: number): Position => {
+      let x, y;
+      do {
+        x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+        y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+      } while (occupiedPositions.has(`${x},${y}`));
+      occupiedPositions.add(`${x},${y}`);
+      return new Position(x, y);
+    };
+
+    // Placer le joueur aléatoirement dans la grille (sans restriction particulière)
+    const playerPosition = generateRandomPosition(0, this.width - 1, 0, this.height - 1);
+    this.player.setPosition(playerPosition.x, playerPosition.y);
+
+    // Placer chaque rocher à une position aléatoire dans la grille, à au moins une case du bord
+    this.rocks.forEach((rock) => {
+      const rockPosition = generateRandomPosition(1, this.width - 2, 1, this.height - 2);
+      rock.setPosition(rockPosition.x, rockPosition.y);
+    });
+
+    // Placer chaque trou à une position aléatoire dans la grille (aucune restriction particulière)
+    this.holes.forEach((hole) => {
+      const holePosition = generateRandomPosition(0, this.width - 1, 0, this.height - 1);
+      hole.setPosition(holePosition.x, holePosition.y);
+    });
+
+    console.log('Niveau initialisé avec le joueur, les rochers et les trous.');
+  }
   /**
-   * Vérifie si le niveau est complété (tous les trous sont remplis)
-   * @returns true si le niveau est complété, sinon false
+   * Vérifie si tous les trous du niveau sont remplis.
+   * @returns `true` si tous les trous sont remplis, sinon `false`.
    */
-  public isLevelComplete(): boolean {
-    return this.holes.every(hole => hole.isFilled);
+  public isCompleted(): boolean {
+    return this.holes.every(hole => hole.isFilled());
   }
 }
