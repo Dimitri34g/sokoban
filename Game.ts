@@ -13,6 +13,7 @@ export class Game {
   public display: Display;
   public currentLevel: Level;
   private score: number;
+  private levelCount: number;
 
   /**
    * Constructeur pour initialiser le jeu avec une largeur, une hauteur et une échelle.
@@ -25,16 +26,19 @@ export class Game {
     this.height = height;
     this.display = new Display(width, height, scale, this);
     this.score = 0;
-    this.currentLevel = this.createInitialLevel();
+    this.levelCount = 1;
+    this.currentLevel = this.createInitialLevel(2, 2);
   }
 
   /**
-   * Crée le niveau initial du jeu avec des positions aléatoires.
-   * @returns Une instance de `Level` représentant le niveau initial.
+   * Crée un niveau du jeu avec des positions aléatoires et un nombre donné de rochers et de trous.
+   * @param rockCount - Le nombre de rochers dans le niveau.
+   * @param holeCount - Le nombre de trous dans le niveau.
+   * @returns Une instance de `Level` représentant le niveau.
    */
-  private createInitialLevel(): Level {
-    const rocks = Array.from({ length: 2 }, () => new Rock(0, 0, this));
-    const holes = Array.from({ length: 2 }, () => new Hole(0, 0));
+  private createInitialLevel(rockCount: number, holeCount: number): Level {
+    const rocks = Array.from({ length: rockCount }, () => new Rock(0, 0, this));
+    const holes = Array.from({ length: holeCount }, () => new Hole(0, 0));
     const player = new Player(0, 0);
     return new Level(rocks, holes, player, this.width, this.height);
   }
@@ -54,34 +58,14 @@ export class Game {
   public nextLevel(): void {
     if (this.currentLevel.isCompleted()) {
       this.score++;
-      this.currentLevel = this.createInitialLevel();
+      this.levelCount++;
+      const newRockCount = 2 + this.levelCount - 1;
+      const newHoleCount = 2 + this.levelCount - 1;
+      this.currentLevel = this.createInitialLevel(newRockCount, newHoleCount);
       this.currentLevel.initializeLevel();
       this.display.update();
       console.log("Niveau suivant commencé ! Score actuel :", this.score);
     }
-  }
-
-  /**
-   * Vérifie les collisions entre le joueur et les rochers/trous.
-   */
-  public checkCollision(): void {
-    const playerPosition = this.currentLevel.player;
-
-    // Vérifier si le joueur entre en collision avec un rocher
-    this.currentLevel.rocks.forEach((rock) => {
-      if (rock.hasSamePosition(playerPosition)) {
-        console.log("Collision avec un rocher !");
-      }
-    });
-
-    // Vérifier si le joueur atteint un trou
-    this.currentLevel.holes.forEach((hole) => {
-      if (hole.hasSamePosition(playerPosition) && !hole.isFilled()) {
-        console.log("Le joueur a atteint un trou !");
-        hole.fill();
-        this.display.update();
-      }
-    });
   }
 
   /**
@@ -160,6 +144,11 @@ export class Game {
         this.currentLevel.rocks.splice(index, 1); // Retirer le rocher de la liste
       }
     });
+
+    // Vérifier si le niveau est terminé et passer au niveau suivant si nécessaire
+    if (this.currentLevel.isCompleted()) {
+      this.nextLevel();
+    }
 
     // Mise à jour de l'affichage après chaque action
     this.display.update();
