@@ -17,10 +17,12 @@ export class Hole extends Tile {
         return this.filled;
     }
     /**
-     * Remplit le trou et change la couleur en marron.
-     */
+   * Remplit le trou et change la couleur en marron.
+   */
     fill() {
-        this.filled = true;
-        this.setColor('brown');
+        if (!this.filled) {
+            this.filled = true;
+            this.setColor('brown');
+        }
     }
 }

@@ -81,11 +81,8 @@ export class Game {
         }
         return null;
     }
-    /**
-     * Gère la boucle de jeu pour le déplacement du joueur.
-     * @param direction - La direction dans laquelle le joueur souhaite se déplacer.
-     */
     gameLoop(direction) {
+        var _a, _b;
         const player = this.currentLevel.player;
         const nextPosition = player.getNextPosition(direction);
         // Vérifier si le mouvement est à l'intérieur des limites de la grille
@@ -93,7 +90,7 @@ export class Game {
             return; // Mouvement non valide, on ne fait rien
         }
         // Vérifier le type de tuile à la prochaine position
-        const tileType = this.getTileTypeAtPosition(nextPosition);
+        let tileType = this.getTileTypeAtPosition(nextPosition);
         if (tileType === TileType.Hole) {
             const hole = this.currentLevel.holes.find(hole => hole.hasSamePosition(nextPosition));
             if (hole && hole.isFilled()) {
@@ -104,34 +101,54 @@ export class Game {
             }
         }
         else if (tileType === TileType.Rock) {
-            const rock = this.currentLevel.rocks.find(rock => rock.hasSamePosition(nextPosition));
-            if (rock) {
-                // Tenter de pousser le rocher
-                if (rock.push(direction)) {
-                    player.move(direction); // Déplacer le joueur si le rocher a été poussé
+            let currentRock = (_a = this.currentLevel.rocks.find(rock => rock.hasSamePosition(nextPosition))) !== null && _a !== void 0 ? _a : null;
+            let rocksToPush = [];
+            // Boucle pour collecter tous les rochers alignés
+            while (currentRock) {
+                rocksToPush.push(currentRock);
+                const nextRockPosition = currentRock.getNextPosition(direction);
+                // Vérifier si la prochaine position est dans les limites et si un autre rocher est présent
+                if (!this.canMoveTo(nextRockPosition)) {
+                    return; // Mouvement non valide, on ne fait rien
+                }
+                tileType = this.getTileTypeAtPosition(nextRockPosition);
+                if (tileType === TileType.Rock) {
+                    currentRock = (_b = this.currentLevel.rocks.find(rock => rock.hasSamePosition(nextRockPosition))) !== null && _b !== void 0 ? _b : null;
+                }
+                else if (tileType === TileType.Hole) {
+                    currentRock = null; // Le trou est libre pour le rocher
+                }
+                else if (tileType === null) {
+                    currentRock = null; // Fin de la chaîne de rochers, la prochaine position est libre
                 }
                 else {
-                    return; // Si le rocher ne peut pas être poussé, on ne bouge pas
+                    return; // Un obstacle est rencontré (autre que rocher ou case vide), on ne peut pas pousser
                 }
+            }
+            // Si toutes les positions suivantes sont libres ou des trous, déplacer les rochers
+            if (tileType === null || tileType === TileType.Hole) {
+                // Déplacer tous les rochers dans l'ordre inverse pour éviter les conflits de position
+                for (let i = rocksToPush.length - 1; i >= 0; i--) {
+                    rocksToPush[i].move(direction);
+                    // Vérifier si le rocher est sur un trou après avoir été déplacé
+                    const correspondingHole = this.currentLevel.holes.find(hole => hole.hasSamePosition(rocksToPush[i]));
+                    if (correspondingHole && !correspondingHole.isFilled()) {
+                        correspondingHole.fill(); // Remplir le trou
+                        this.currentLevel.rocks.splice(this.currentLevel.rocks.indexOf(rocksToPush[i]), 1); // Retirer le rocher de la liste
+                    }
+                }
+                player.move(direction); // Déplacer le joueur après avoir déplacé les rochers
             }
         }
         else if (tileType === null) {
             // La position est libre, on peut bouger
             player.move(direction);
         }
-        // Vérifier si un rocher et un trou ont la même position
-        this.currentLevel.rocks.forEach((rock, index) => {
-            const correspondingHole = this.currentLevel.holes.find(hole => hole.hasSamePosition(rock));
-            if (correspondingHole) {
-                correspondingHole.fill(); // Remplir le trou
-                this.currentLevel.rocks.splice(index, 1); // Retirer le rocher de la liste
-            }
-        });
+        // Mise à jour de l'affichage après chaque action
+        this.display.update();
         // Vérifier si le niveau est terminé et passer au niveau suivant si nécessaire
         if (this.currentLevel.isCompleted()) {
             this.nextLevel();
         }
-        // Mise à jour de l'affichage après chaque action
-        this.display.update();
     }
 }
