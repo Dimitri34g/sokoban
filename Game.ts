@@ -132,7 +132,9 @@ export class Game {
 
     if (tileType === TileType.Hole) {
       const hole = this.currentLevel.holes.find(hole => hole.hasSamePosition(nextPosition));
-      if (hole && !hole.isFilled()) {
+      if (hole && hole.isFilled()) {
+        player.move(direction); // Le trou est rempli, le joueur peut se déplacer
+      } else {
         return; // Le trou n'est pas rempli, le joueur ne peut pas s'y déplacer
       }
     } else if (tileType === TileType.Rock) {
