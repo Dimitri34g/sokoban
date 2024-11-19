@@ -75,8 +75,6 @@ export class Game {
    */
   public canMoveTo(position: Position): boolean {
     const { x, y } = position;
-
-    // Vérifier si la position est dans les limites de la grille
     return x >= 0 && x < this.width && y >= 0 && y < this.height;
   }
 
@@ -98,75 +96,69 @@ export class Game {
     return null;
   }
 
+  /**
+   * Gère la boucle de jeu pour le déplacement du joueur.
+   * @param direction - La direction dans laquelle le joueur souhaite se déplacer.
+   */
   public gameLoop(direction: Direction): void {
     const player = this.currentLevel.player;
     const nextPosition = player.getNextPosition(direction);
   
-    // Vérifier si le mouvement est à l'intérieur des limites de la grille
     if (!this.canMoveTo(nextPosition)) {
-      return; // Mouvement non valide, on ne fait rien
+      return;
     }
   
-    // Vérifier le type de tuile à la prochaine position
     let tileType = this.getTileTypeAtPosition(nextPosition);
   
     if (tileType === TileType.Hole) {
       const hole = this.currentLevel.holes.find(hole => hole.hasSamePosition(nextPosition));
       if (hole && hole.isFilled()) {
-        player.move(direction); // Le trou est rempli, le joueur peut se déplacer
+        player.move(direction);
       } else {
-        return; // Le trou n'est pas rempli, le joueur ne peut pas s'y déplacer
+        return;
       }
     } else if (tileType === TileType.Rock) {
       let currentRock: Rock | null = this.currentLevel.rocks.find(rock => rock.hasSamePosition(nextPosition)) ?? null;
       let rocksToPush: Rock[] = [];
   
-      // Boucle pour collecter tous les rochers alignés
       while (currentRock) {
         rocksToPush.push(currentRock);
         const nextRockPosition = currentRock.getNextPosition(direction);
   
-        // Vérifier si la prochaine position est dans les limites et si un autre rocher est présent
         if (!this.canMoveTo(nextRockPosition)) {
-          return; // Mouvement non valide, on ne fait rien
+          return; 
         }
   
         tileType = this.getTileTypeAtPosition(nextRockPosition);
         if (tileType === TileType.Rock) {
           currentRock = this.currentLevel.rocks.find(rock => rock.hasSamePosition(nextRockPosition)) ?? null;
         } else if (tileType === TileType.Hole) {
-          currentRock = null; // Le trou est libre pour le rocher
+          currentRock = null;
         } else if (tileType === null) {
-          currentRock = null; // Fin de la chaîne de rochers, la prochaine position est libre
+          currentRock = null;
         } else {
-          return; // Un obstacle est rencontré (autre que rocher ou case vide), on ne peut pas pousser
+          return;
         }
       }
-  
-      // Si toutes les positions suivantes sont libres ou des trous, déplacer les rochers
+
       if (tileType === null || tileType === TileType.Hole) {
-        // Déplacer tous les rochers dans l'ordre inverse pour éviter les conflits de position
         for (let i = rocksToPush.length - 1; i >= 0; i--) {
           rocksToPush[i].move(direction);
   
-          // Vérifier si le rocher est sur un trou après avoir été déplacé
           const correspondingHole = this.currentLevel.holes.find(hole => hole.hasSamePosition(rocksToPush[i]));
           if (correspondingHole && !correspondingHole.isFilled()) {
-            correspondingHole.fill(); // Remplir le trou
-            this.currentLevel.rocks.splice(this.currentLevel.rocks.indexOf(rocksToPush[i]), 1); // Retirer le rocher de la liste
+            correspondingHole.fill();
+            this.currentLevel.rocks.splice(this.currentLevel.rocks.indexOf(rocksToPush[i]), 1);
           }
         }
-        player.move(direction); // Déplacer le joueur après avoir déplacé les rochers
+        player.move(direction);
       }
     } else if (tileType === null) {
-      // La position est libre, on peut bouger
       player.move(direction);
     }
   
-    // Mise à jour de l'affichage après chaque action
     this.display.update();
   
-    // Vérifier si le niveau est terminé et passer au niveau suivant si nécessaire
     if (this.currentLevel.isCompleted()) {
       this.nextLevel();
     }

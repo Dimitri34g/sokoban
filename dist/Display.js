@@ -17,8 +17,8 @@ export class Display {
      */
     update() {
         console.log("Affichage mis à jour");
-        this.drawer.clear(); // Efface le canvas avant de redessiner
-        this.draw(this.game); // Redessine le jeu actuel
+        this.drawer.clear();
+        this.draw(this.game);
     }
     /**
      * Rendu du niveau actuel.
@@ -26,7 +26,6 @@ export class Display {
      */
     render(level) {
         console.log("Rendu du niveau");
-        // Utiliser le drawer pour dessiner chaque élément du niveau
         level.rocks.forEach((rock) => {
             this.drawer.drawTile(rock);
         });

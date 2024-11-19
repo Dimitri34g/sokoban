@@ -1,7 +1,6 @@
 import { MovableTile, Direction } from './MovableTile.js';
 import { TileType } from './Tile.js';
 import { Game } from './Game.js';
-import { Position } from './Position.js';
 
 export class Rock extends MovableTile {
   private game: Game;

@@ -5,14 +5,13 @@ export class Sokoban {
      * Constructeur pour initialiser Sokoban avec un jeu.
      */
     constructor() {
-        this.game = new Game(50, 50, 10); // Initialiser un jeu avec largeur, hauteur et échelle
+        this.game = new Game(50, 50, 10);
     }
     /**
      * Point d'entrée principal pour démarrer le jeu Sokoban.
      */
     main() {
         this.game.start();
-        // Logique pour interagir avec le joueur (écouter les commandes, rafraîchir le jeu, etc.)
         document.addEventListener('keydown', (event) => {
             switch (event.key) {
                 case 'ArrowUp':
@@ -31,6 +30,5 @@ export class Sokoban {
         });
     }
 }
-// Créer une instance de Sokoban et lancer le jeu
 const sokoban = new Sokoban();
 sokoban.main();

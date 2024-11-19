@@ -1,4 +1,4 @@
-import { Tile , TileType } from './Tile.js';
+import { Tile, TileType } from './Tile.js';
 
 export default class Drawer {
   private ctx: CanvasRenderingContext2D;

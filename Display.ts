@@ -23,16 +23,15 @@ export class Display {
    */
   public update(): void {
     console.log("Affichage mis à jour");
-    this.drawer.clear();  // Efface le canvas avant de redessiner
-    this.draw(this.game); // Redessine le jeu actuel
-}
+    this.drawer.clear();
+    this.draw(this.game);
+  }
   /**
    * Rendu du niveau actuel.
    * @param level - Le niveau à rendre à l'écran.
    */
   public render(level: Level): void {
     console.log("Rendu du niveau");
-    // Utiliser le drawer pour dessiner chaque élément du niveau
     level.rocks.forEach((rock) => {
       this.drawer.drawTile(rock);
     });

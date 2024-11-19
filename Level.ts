@@ -24,7 +24,6 @@ export class Level {
   public initializeLevel(): void {
     const occupiedPositions = new Set<string>();
 
-    // Génère une position aléatoire valide pour chaque entité
     const generateRandomPosition = (minX: number, maxX: number, minY: number, maxY: number): Position => {
       let x, y;
       do {
@@ -35,17 +34,14 @@ export class Level {
       return new Position(x, y);
     };
 
-    // Placer le joueur aléatoirement dans la grille (sans restriction particulière)
     const playerPosition = generateRandomPosition(0, this.width - 1, 0, this.height - 1);
     this.player.setPosition(playerPosition.x, playerPosition.y);
 
-    // Placer chaque rocher à une position aléatoire dans la grille, à au moins une case du bord
     this.rocks.forEach((rock) => {
       const rockPosition = generateRandomPosition(1, this.width - 2, 1, this.height - 2);
       rock.setPosition(rockPosition.x, rockPosition.y);
     });
 
-    // Placer chaque trou à une position aléatoire dans la grille (aucune restriction particulière)
     this.holes.forEach((hole) => {
       const holePosition = generateRandomPosition(0, this.width - 1, 0, this.height - 1);
       hole.setPosition(holePosition.x, holePosition.y);
@@ -53,6 +49,7 @@ export class Level {
 
     console.log('Niveau initialisé avec le joueur, les rochers et les trous.');
   }
+
   /**
    * Vérifie si tous les trous du niveau sont remplis.
    * @returns `true` si tous les trous sont remplis, sinon `false`.
